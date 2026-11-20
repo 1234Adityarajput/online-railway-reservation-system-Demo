@@ -59,6 +59,9 @@
     <script src="<?php echo base_url ?>plugins/toastr/toastr.min.js"></script>
     <script>
         var _base_url_ = '<?php echo base_url ?>';
+        if (window.location.protocol === 'https:' && _base_url_.startsWith('http://')) {
+            _base_url_ = _base_url_.replace(/^http:\/\//i, 'https://');
+        }
     </script>
     <script src="<?php echo base_url ?>dist/js/script.js"></script>
     <style>

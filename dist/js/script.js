@@ -23,17 +23,34 @@ window.alert_toast = function($msg = 'TEST', $bg = 'success', $pos = '') {
 
 $(document).ready(function() {
     // Login
-    $('#login-frm').submit(function(e) {
+    $('#login-frm').off('submit').on('submit', function(e) {
         e.preventDefault()
         start_loader()
         if ($('.err_msg').length > 0)
             $('.err_msg').remove()
+
+        var loginUrl = (typeof _base_url_ !== 'undefined' && _base_url_) 
+            ? _base_url_ + 'classes/Login.php?f=login' 
+            : '../classes/Login.php?f=login';
+
+        // Auto-fix protocol to prevent Mixed Content blocking on HTTPS
+        if (window.location.protocol === 'https:' && loginUrl.startsWith('http://')) {
+            loginUrl = loginUrl.replace(/^http:\/\//i, 'https://');
+        }
+
         $.ajax({
-            url: _base_url_ + 'classes/Login.php?f=login',
+            url: loginUrl,
             method: 'POST',
             data: $(this).serialize(),
-            error: err => {
-                console.log(err)
+            error: function(xhr, status, error) {
+                console.warn("AJAX login error:", status, error, xhr.responseText);
+                // Fallback: If AJAX failed (e.g. network/protocol/500), submit standard POST directly to admin/login.php
+                var form = document.getElementById('login-frm');
+                if (form) {
+                    $('#login-frm').off('submit');
+                    form.submit();
+                    return;
+                }
                 var _frm = $('#login-frm')
                 var _msg = "<div class='alert alert-danger text-white err_msg'><i class='fa fa-exclamation-triangle'></i> Connection error. Please check server status.</div>"
                 _frm.prepend(_msg)
@@ -48,7 +65,11 @@ $(document).ready(function() {
                 }
                 if (data) {
                     if (data.status == 'success') {
-                        location.replace(_base_url_ + 'admin/index.php');
+                        var target = (typeof _base_url_ !== 'undefined' && _base_url_) ? _base_url_ + 'admin/index.php' : 'index.php';
+                        if (window.location.protocol === 'https:' && target.startsWith('http://')) {
+                            target = target.replace(/^http:\/\//i, 'https://');
+                        }
+                        location.replace(target);
                     } else if (data.status == 'incorrect') {
                         var _frm = $('#login-frm')
                         var _msg = "<div class='alert alert-danger text-white err_msg'><i class='fa fa-exclamation-triangle'></i> Incorrect username or password</div>"
@@ -69,6 +90,13 @@ $(document).ready(function() {
                         _frm.find('input').addClass('is-invalid')
                     }
                 } else {
+                    // Fallback to direct form submit if JSON parse fails
+                    var form = document.getElementById('login-frm');
+                    if (form) {
+                        $('#login-frm').off('submit');
+                        form.submit();
+                        return;
+                    }
                     var _frm = $('#login-frm')
                     var _msg = "<div class='alert alert-danger text-white err_msg'><i class='fa fa-exclamation-triangle'></i> Server returned invalid response. Check database setup.</div>"
                     _frm.prepend(_msg)

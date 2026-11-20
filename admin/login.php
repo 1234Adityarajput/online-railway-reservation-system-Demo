@@ -142,7 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username']) && isset(
 <script src="<?php echo base_url ?>plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <!-- AdminLTE App -->
 <script src="<?php echo base_url ?>dist/js/adminlte.min.js"></script>
-<script src="<?php echo base_url ?>dist/js/script.js"></script>
 
 <script>
   $(document).ready(function(){

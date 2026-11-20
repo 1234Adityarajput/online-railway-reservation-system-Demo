@@ -1,5 +1,5 @@
 <?php
-require_once '../config.php';
+require_once __DIR__ . '/../config.php';
 class Login extends DBConnection {
 	private $settings;
 	public function __construct(){
@@ -7,7 +7,7 @@ class Login extends DBConnection {
 		$this->settings = $_settings;
 
 		parent::__construct();
-		ini_set('display_error', 1);
+		ini_set('display_errors', 0);
 	}
 	public function __destruct(){
 		parent::__destruct();
@@ -90,7 +90,7 @@ $action = !isset($_GET['f']) ? 'none' : strtolower($_GET['f']);
 $auth = new Login();
 switch ($action) {
 	case 'login':
-		if (ob_get_length()) ob_clean();
+		while (ob_get_level()) ob_end_clean();
 		header('Content-Type: application/json');
 		echo $auth->login();
 		break;
