@@ -242,12 +242,26 @@ Class Users extends DBConnection {
 	}
 	public function verify_client(){
 		extract($_POST);
+		$id = intval($id ?? 0);
 		$update = $this->conn->query("UPDATE `client_list` set `status` = 1 where id = $id");
 		if($update){
 			$this->settings->set_flashdata('success','client Account has verified successfully.');
 			$resp['status'] = 'success';
 		}else{
 			$resp['status'] = 'failed';
+		}
+		return json_encode($resp);
+	}
+	public function verify_user(){
+		extract($_POST);
+		$id = intval($id ?? 0);
+		$update = $this->conn->query("UPDATE `users` set `status` = 1 where id = $id");
+		if($update){
+			$this->settings->set_flashdata('success','User Account has been verified successfully.');
+			$resp['status'] = 'success';
+		}else{
+			$resp['status'] = 'failed';
+			$resp['error'] = $this->conn->error;
 		}
 		return json_encode($resp);
 	}
@@ -271,6 +285,9 @@ switch ($action) {
 	break;
 	case 'verify_client':
 		echo $users->verify_client();
+	break;
+	case 'verify_user':
+		echo $users->verify_user();
 	break;
 	default:
 		// echo $sysset->index();

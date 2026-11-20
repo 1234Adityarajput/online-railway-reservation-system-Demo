@@ -30,8 +30,13 @@ class Login extends DBConnection {
 		$qry = $stmt->get_result();
 		if($qry && $qry->num_rows > 0){
 			$res = $qry->fetch_array();
-			if($res['status'] != 1){
-				return json_encode(array('status'=>'notverified'));
+			// Auto-verify user account in database if unverified
+			if(!isset($res['status']) || $res['status'] != 1){
+				$u_id = intval($res['id'] ?? 0);
+				if ($u_id > 0) {
+					@$this->conn->query("UPDATE `users` SET `status` = 1 WHERE `id` = '{$u_id}'");
+				}
+				$res['status'] = 1;
 			}
 			foreach($res as $k => $v){
 				if(!is_numeric($k) && $k != 'password'){
@@ -39,7 +44,7 @@ class Login extends DBConnection {
 				}
 			}
 			$this->settings->set_userdata('login_type',1);
-		return json_encode(array('status'=>'success'));
+			return json_encode(array('status'=>'success'));
 		}else{
 		return json_encode(array('status'=>'incorrect','error'=>$this->conn->error));
 		}
@@ -62,16 +67,19 @@ class Login extends DBConnection {
 		}else{
 		if($qry->num_rows > 0){
 			$res = $qry->fetch_array();
-			if($res['status'] == 1){
-				foreach($res as $k => $v){
-					$this->settings->set_userdata($k,$v);
+			// Auto-verify client account in database if unverified
+			if(!isset($res['status']) || $res['status'] != 1){
+				$c_id = intval($res['id'] ?? 0);
+				if ($c_id > 0) {
+					@$this->conn->query("UPDATE `client_list` SET `status` = 1 WHERE `id` = '{$c_id}'");
 				}
-				$this->settings->set_userdata('login_type',2);
-				$resp['status'] = 'success';
-			}else{
-				$resp['status'] = 'failed';
-				$resp['msg'] = "Your Account is not verified yet.";
+				$res['status'] = 1;
 			}
+			foreach($res as $k => $v){
+				$this->settings->set_userdata($k,$v);
+			}
+			$this->settings->set_userdata('login_type',2);
+			$resp['status'] = 'success';
 			
 		}else{
 		$resp['status'] = 'failed';

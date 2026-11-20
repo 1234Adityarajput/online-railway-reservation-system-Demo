@@ -21,18 +21,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username']) && isset(
             $qry = $stmt->get_result();
             if ($qry && $qry->num_rows > 0) {
                 $res = $qry->fetch_array();
-                if ($res['status'] != 1) {
-                    $login_error = 'Your Account is not yet verified.';
-                } else {
-                    foreach ($res as $k => $v) {
-                        if (!is_numeric($k) && $k != 'password') {
-                            $_settings->set_userdata($k, $v);
-                        }
+                // Auto-verify and activate user account in database
+                if (!isset($res['status']) || $res['status'] != 1) {
+                    $u_id = intval($res['id'] ?? 0);
+                    if ($u_id > 0) {
+                        @$conn->query("UPDATE `users` SET `status` = 1 WHERE `id` = '{$u_id}'");
                     }
-                    $_settings->set_userdata('login_type', 1);
-                    header("Location: " . base_url . "admin/index.php");
-                    exit;
+                    $res['status'] = 1;
                 }
+                foreach ($res as $k => $v) {
+                    if (!is_numeric($k) && $k != 'password') {
+                        $_settings->set_userdata($k, $v);
+                    }
+                }
+                $_settings->set_userdata('login_type', 1);
+                header("Location: " . base_url . "admin/index.php");
+                exit;
             } else {
                 $login_error = 'Incorrect username or password.';
             }

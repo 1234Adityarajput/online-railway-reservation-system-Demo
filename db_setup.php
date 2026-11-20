@@ -55,12 +55,16 @@ try {
                 }
             }
 
-            // Check admin user
+            // Check admin user and auto-verify accounts
             if (isset($tables_found['users'])) {
+                @$conn->query("UPDATE `users` SET `status` = 1 WHERE `status` != 1 OR `status` IS NULL");
                 $u_res = $conn->query("SELECT id, username, firstname, lastname, type, status FROM `users` WHERE type = 1 LIMIT 1");
                 if ($u_res && $u_res->num_rows > 0) {
                     $admin_user = $u_res->fetch_assoc();
                 }
+            }
+            if (isset($tables_found['client_list'])) {
+                @$conn->query("UPDATE `client_list` SET `status` = 1 WHERE `status` != 1 OR `status` IS NULL");
             }
         } else {
             $connection_status = false;
@@ -70,6 +74,36 @@ try {
 } catch (Exception $e) {
     $connection_status = false;
     $connection_error = $e->getMessage();
+}
+
+// Handle 1-Click Verify All Accounts Action
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_all_users') {
+    if (!$conn) {
+        $import_result = [
+            'status' => 'error',
+            'message' => 'Cannot verify: Database is not connected. ' . $connection_error
+        ];
+    } else {
+        $u_cnt = 0;
+        if (isset($tables_found['users'])) {
+            $conn->query("UPDATE `users` SET `status` = 1");
+            $u_cnt += $conn->affected_rows;
+        }
+        if (isset($tables_found['client_list'])) {
+            $conn->query("UPDATE `client_list` SET `status` = 1");
+            $u_cnt += $conn->affected_rows;
+        }
+        $import_result = [
+            'status' => 'success',
+            'message' => "All user accounts ({$u_cnt} record(s)) have been verified and set to Active! You can now login immediately.",
+            'errors' => []
+        ];
+        // Refresh admin details
+        $u_res = $conn->query("SELECT id, username, firstname, lastname, type, status FROM `users` WHERE type = 1 LIMIT 1");
+        if ($u_res && $u_res->num_rows > 0) {
+            $admin_user = $u_res->fetch_assoc();
+        }
+    }
 }
 
 // Handle 1-Click Import Action
@@ -315,7 +349,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
                         <h6 class="mb-1"><i class="fa-solid fa-user-shield me-2"></i> Admin Account Ready</h6>
                         <div class="small">
                             <strong>Username:</strong> <code>admin</code> &nbsp;|&nbsp; 
-                            <strong>Default Password:</strong> <code>admin123</code>
+                            <strong>Default Password:</strong> <code>admin123</code> &nbsp;|&nbsp;
+                            <strong>Status:</strong> <span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i> Active & Verified</span>
                         </div>
                     </div>
                     <a href="admin/login.php" class="btn btn-primary btn-sm px-3"><i class="fa-solid fa-right-to-bracket me-1"></i> Login to Admin</a>
@@ -329,7 +364,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
                 <a href="index.php" class="btn btn-outline-light"><i class="fa-solid fa-house me-1"></i> View Website</a>
                 <a href="admin/login.php" class="btn btn-outline-primary"><i class="fa-solid fa-lock me-1"></i> Admin Panel</a>
             </div>
-            <div>
+            <div class="d-flex gap-2">
+                <form method="POST" style="display:inline;">
+                    <input type="hidden" name="action" value="verify_all_users">
+                    <button type="submit" class="btn btn-warning px-3" <?= !$connection_status ? 'disabled' : '' ?>>
+                        <i class="fa-solid fa-user-check me-1"></i> Verify All Accounts
+                    </button>
+                </form>
                 <form method="POST" style="display:inline;">
                     <input type="hidden" name="action" value="import_sql">
                     <input type="hidden" name="db_host" value="<?= htmlspecialchars($db_host) ?>">

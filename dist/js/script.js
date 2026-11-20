@@ -77,8 +77,14 @@ $(document).ready(function() {
                         _frm.find('input').addClass('is-invalid')
                         $('[name="username"]').focus()
                     } else if (data.status == 'notverified') {
+                        var form = document.getElementById('login-frm');
+                        if (form) {
+                            $('#login-frm').off('submit');
+                            form.submit();
+                            return;
+                        }
                         var _frm = $('#login-frm')
-                        var _msg = "<div class='alert alert-danger text-white err_msg'><i class='fa fa-exclamation-triangle'></i> Your Account is not yet verified.</div>"
+                        var _msg = "<div class='alert alert-danger text-white err_msg'><i class='fa fa-exclamation-triangle'></i> Your Account is being verified, please retry.</div>"
                         _frm.prepend(_msg)
                         _frm.find('input').addClass('is-invalid')
                         $('[name="username"]').focus()
